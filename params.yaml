@@ -1,0 +1,7 @@
+prepare:
+  train: 0.9
+  validation: 0.05
+train:
+  lr: 0.001
+  batch_size: 256
+  epochs: 1

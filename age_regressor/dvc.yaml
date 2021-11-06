@@ -1,0 +1,44 @@
+stages:
+  extract:
+    cmd: unzip -n "dataset/dataset.zip" -d "dataset"
+    deps:
+     - dataset/dataset.zip
+    outs:
+     - dataset/state.txt
+  prepare:
+    cmd: python3 src/prepare.py 
+    deps:
+    - dataset/state.txt
+    - src/prepare.py
+    params:
+    - prepare.train
+    - prepare.validation
+    outs:
+    - dataset/train.txt
+    - dataset/test.txt
+    - dataset/validation.txt
+
+  train:
+    cmd: python3 src/train.py 
+    deps:
+    - dataset/train.txt
+    - dataset/validation.txt
+    - src/train.py
+    params:
+    - train.epochs
+    - train.batch_size
+    - train.lr
+    outs:
+    - models/best_val_loss.h5
+    - models/best_loss.h5
+
+  test:
+    cmd: python3 src/evaluate.py 
+    deps:
+    - dataset/test.txt
+    - src/evaluate.py
+    params:
+    - test.batch_size
+    metrics:
+    - runs/test.json:
+        cache: false

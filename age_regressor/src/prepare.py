@@ -16,7 +16,7 @@ params = load_params()
 
 all_imgs = []
 
-folders = ["dataset/train_aug/*/*.jpg", "dataset/validation/*/*.jpg", "dataset/test/*/*.jpg"]
+folders = ["dataset/train/*/*.jpg", "dataset/validation/*/*.jpg", "dataset/test/*/*.jpg"]
 
 for f in folders:
   all_imgs.extend(glob.glob(f))

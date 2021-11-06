@@ -1,0 +1,76 @@
+schema: '2.0'
+stages:
+  extract:
+    cmd: unzip -n "dataset/dataset.zip" -d "dataset"
+    deps:
+    - path: dataset/dataset.zip
+      md5: 27fd3a8de7fe5b6601385daaa7d6fbf2
+      size: 1197272868
+    outs:
+    - path: dataset/state.txt
+      md5: 1f88efd9f39f4a92cf55ea25585d182a
+      size: 24
+      isexec: true
+  prepare:
+    cmd: python3 src/prepare.py
+    deps:
+    - path: dataset/state.txt
+      md5: 1f88efd9f39f4a92cf55ea25585d182a
+      size: 24
+    - path: src/prepare.py
+      md5: 519a7b32d85d57bbeb1814d667b64714
+      size: 1267
+    params:
+      params.yaml:
+        prepare.train: 0.9
+        prepare.validation: 0.05
+    outs:
+    - path: dataset/test.txt
+      md5: d7283856dd94cefd9f19caa6064c8d7f
+      size: 715030
+    - path: dataset/train.txt
+      md5: 39553b40c2c9a9d9d9ef103bce8fa0fd
+      size: 6119295
+    - path: dataset/validation.txt
+      md5: ce825eba8585c4c8611282dffd3fd0f3
+      size: 322654
+  train:
+    cmd: python3 src/train.py
+    deps:
+    - path: dataset/train.txt
+      md5: 39553b40c2c9a9d9d9ef103bce8fa0fd
+      size: 6119295
+    - path: dataset/validation.txt
+      md5: ce825eba8585c4c8611282dffd3fd0f3
+      size: 322654
+    - path: src/train.py
+      md5: 24830f4a8e80f4b8b3d4cc1b6ee666b8
+      size: 5041
+    params:
+      params.yaml:
+        train.batch_size: 128
+        train.epochs: 1
+        train.lr: 0.001
+    outs:
+    - path: models/best_loss.h5
+      md5: b11082d2a8c6f8f3c34bfea5a79a084d
+      size: 16760728
+    - path: models/best_val_loss.h5
+      md5: e69df657175ea8ea01f8452b279ecab6
+      size: 16760728
+  test:
+    cmd: python3 src/evaluate.py
+    deps:
+    - path: dataset/test.txt
+      md5: d7283856dd94cefd9f19caa6064c8d7f
+      size: 715030
+    - path: src/evaluate.py
+      md5: 23ffb854e29f1cb274e5108261343f72
+      size: 3059
+    params:
+      params.yaml:
+        test.batch_size: 32
+    outs:
+    - path: runs/test.json
+      md5: 79965a082d5369a3f9966fcb7fc7b263
+      size: 53

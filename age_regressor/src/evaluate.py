@@ -113,6 +113,6 @@ print(res)
 if not os.path.exists("runs"):
   os.makedirs("runs")
 
-obj = {"mae" : res[0][0], "mse": res[0][1]}
+obj = {"mae" : res[0], "mse": res[1]}
 with open("runs/test.json", "w") as f:
   json.dump(obj, f)

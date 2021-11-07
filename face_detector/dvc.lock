@@ -1,0 +1,65 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python3 prepare.py
+    deps:
+    - path: dataset.zip
+      md5: dbc836a68a04871e7f824743064a09f1
+      size: 263241212
+    - path: prepare.py
+      md5: 8c90925dc08c89de0b0e124f2ca59d95
+      size: 2783
+    outs:
+    - path: dataset/yolo/state.txt
+      md5: 889e0d7343405c079195e7b8903c8c9e
+      size: 6
+  train:
+    cmd: python3 train.py --data "dataset/yolo/data.yaml" --cfg ./models/yolov5s.yaml
+      --weights "yolov5s.pt" --name results  --cache
+    deps:
+    - path: dataset/yolo/data.yaml
+      md5: 8c97e7889f59c0a767e9fb4f9758916b
+      size: 87
+    - path: dataset/yolo/state.txt
+      md5: 889e0d7343405c079195e7b8903c8c9e
+      size: 6
+    - path: models/yolov5s.yaml
+      md5: ff81521735cb2a13a20250771727eda6
+      size: 1402
+    - path: train.py
+      md5: 09a1ec3b8d739368b0e5b13fadaa3c7c
+      size: 33124
+    - path: yolov5s.pt
+      md5: 6afd8e05c9539ba4537fd3dfe32db554
+      size: 14795158
+    params:
+      params.yaml:
+        train.batch_size: 32
+        train.epochs: 1
+        train.image_size: 320
+    outs:
+    - path: runs/train/results/weights/best.pt
+      md5: de74f6d3435c3c08c5cc96b8a2708129
+      size: 14298503
+  test:
+    cmd: python3 detect.py --weights "runs/train/results/weights/best.pt" --source
+      "dataset/yolo/test/images"
+    deps:
+    - path: dataset/yolo/test/images
+      md5: b4fbc1b44db55a3e843676dc9ca661ea.dir
+      size: 25991460
+      nfiles: 219
+    - path: detect.py
+      md5: 9e84bf592c59bb54cbe7e3ad37b45b5a
+      size: 17192
+    - path: runs/train/results/weights/best.pt
+      md5: de74f6d3435c3c08c5cc96b8a2708129
+      size: 14298503
+    params:
+      params.yaml:
+        test.conf: 0.4
+        train.image_size: 320
+    outs:
+    - path: test.json
+      md5: 7cf48774cc650f1a818c12999fb4be70
+      size: 24634

@@ -163,7 +163,12 @@ model.compile(
 
 try:
   mlflow.start_run()
-  
+  mlflow.log_param("train_num_imgs", num_train)
+  mlflow.log_param("validation_num_imgs", num_valid)
+  mlflow.log_param("validation_train_ratio", num_valid / num_train)
+
+  mlflow.log_param("batch_size", params["train"]["batch_size"])
+  mlflow.log_param("epochs_tot", params["train"]["epochs"])
   model.fit(
     train_ds,
     steps_per_epoch= num_train // params["train"]["batch_size"],
@@ -173,9 +178,9 @@ try:
     epochs=params["train"]["epochs"]
   )
 except KeyboardInterrupt:
-  mlflow.log_param("epochs_trained", cs[4].ep_)
-  mlflow.end_run()
+  print("training stopped by user..")
 
+mlflow.log_param("epochs_trained", cs[4].ep_)
 mlflow.end_run()
 
 print("training done!")

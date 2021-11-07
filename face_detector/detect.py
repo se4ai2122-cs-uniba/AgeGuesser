@@ -319,6 +319,14 @@ def parse_opt():
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
     opt = parser.parse_args()
+    
+    params = None
+    with open("params.yaml", 'r') as fd:
+        params = yaml.safe_load(fd)
+    
+    opt.imgsz = params['test']['image_size']
+    opt.conf_thres = params['test']['conf']
+    
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
     print_args(FILE.stem, opt)
     return opt

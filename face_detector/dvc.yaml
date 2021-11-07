@@ -1,0 +1,36 @@
+stages:
+      
+  prepare:
+    cmd: python3 prepare.py
+    deps:
+    - dataset.zip
+    - prepare.py
+    outs:
+    - dataset/yolo/state.txt 
+
+  train:
+    cmd: python3 train.py --data "dataset/yolo/data.yaml" --cfg ./models/yolov5s.yaml --weights "yolov5s.pt" --name results  --cache 
+    deps:
+    - dataset/yolo/state.txt 
+    - dataset/yolo/data.yaml
+    - models/yolov5s.yaml
+    - yolov5s.pt
+    - train.py
+    params:
+      - train.epochs
+      - train.batch_size
+      - train.image_size
+    outs:
+    - runs/train/results/weights/best.pt
+  
+  test:
+    cmd: python3 detect.py --weights "runs/train/results/weights/best.pt" --source "dataset/yolo/test/images"
+    deps:
+    - dataset/yolo/test/images
+    - runs/train/results/weights/best.pt
+    - detect.py
+    params:
+      - test.conf
+      - train.image_size    
+    outs:
+    - test.json

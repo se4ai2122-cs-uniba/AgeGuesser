@@ -71,7 +71,17 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
         opt.resume, opt.noval, opt.nosave, opt.workers, opt.freeze
 
 
+    params = None
+    with open("params.yaml", 'r') as fd:
+        params = yaml.safe_load(fd)
     
+    
+    epochs = params['train']['epochs']
+    batch_size = params['train']['batch_size']
+    imgsz = params['train']['image_size']
+    opt.imgsz =imgsz 
+        
+
 
 
     # Directories

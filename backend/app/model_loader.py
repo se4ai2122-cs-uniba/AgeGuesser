@@ -10,8 +10,12 @@ import torch
 import torchvision
 from torchvision import transforms
 from app.schemas import Face, FaceWithAge
+from models.experimental import attempt_load
+from utils.datasets import letterbox
+from utils.general import check_img_size, non_max_suppression, scale_coords
 import timm
 from torch import nn
+from utils.torch_utils import select_device
 
 
 img_height = 224
@@ -168,3 +172,134 @@ class EstimationModel(object):
         return FaceWithAge(age=-1, x=0, y=0, w=img.shape[1], h=img.shape[0])
     
     return FaceWithAge(age=int(self.predict(img)), x=0, y=0, w=img.shape[1], h=img.shape[0])
+
+class DetectionModel(object):
+    
+  def __init__(self, model, stride, device, imgsz,) -> None:
+    super().__init__()
+    self.model = model
+    self.stride = stride
+    self.device = device
+    self.imgsz = imgsz
+  
+  def readb64_cv(self, base64_):
+    msg = base64.decodebytes(bytes(base64_, "utf-8"))
+    buf = io.BytesIO(msg)
+    pil_image = Image.open(buf).convert('RGB') 
+    # pil_image.save('my-image.jpeg')
+    open_cv_image = np.array(pil_image) 
+    # Convert RGB to BGR 
+    img = open_cv_image[:, :, ::-1].copy() 
+    
+    return img
+
+  def setup_img(self, open_cv_image):
+    #open_cv_image = np.array(pil_image)
+    dst = letterbox(open_cv_image, new_shape=(320, 320), stride=self.stride)[0]
+    
+    dst = dst.transpose(2, 0, 1)
+    dst = np.ascontiguousarray(dst)
+
+    return dst
+
+  def predict(self, img, im0, threshold,):
+
+    img = torch.from_numpy(img).to(self.device)
+    img = img.float()  # uint8 to fp16/32
+    img /= 255.0
+    if img.ndimension() == 3:
+        img = img.unsqueeze(0)
+
+    # Inference
+    pred = self.model(img, augment=False)[0]
+
+    # Apply NMS
+    pred = non_max_suppression(pred, threshold, 0.45, agnostic=False)
+
+    boxess = []
+
+    # print(im0.shape)
+    for i, det in enumerate(pred):  # detections per image 
+
+        if len(det):
+            # Rescale boxes from img_size to im0 size
+            det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
+
+            for *xyxy, conf, cls in reversed(det):
+
+                f = Face(x=int(xyxy[0]),y=int(xyxy[1]),w=int(xyxy[2]-xyxy[0]), h=int(xyxy[3]-xyxy[1]), face_probability=float("%.2f" % conf.item()))
+                boxess.append(f)
+
+    return boxess
+
+  def predict_with_age(self, img, im0, threshold, age_model : EstimationModel):
+
+    img = torch.from_numpy(img).to(self.device)
+    img = img.float()  # uint8 to fp16/32
+    img /= 255.0
+    if img.ndimension() == 3:
+        img = img.unsqueeze(0)
+
+    # Inference
+    pred = self.model(img, augment=False)[0]
+
+    # Apply NMS
+    pred = non_max_suppression(pred, threshold, 0.45, agnostic=False)
+
+    boxess = []
+
+    # print(im0.shape)
+    for i, det in enumerate(pred):  # detections per image 
+
+        if len(det):
+            # Rescale boxes from img_size to im0 size
+            det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
+
+            for *xyxy, conf, cls in reversed(det):
+
+                face = im0[int(xyxy[1]):int(xyxy[3]),int(xyxy[0]):int(xyxy[2])]
+                # cv2.imwrite("lol.jpg", face)
+                # run age classifier
+                age = age_model.predict(face) # age_estimation(age_model, face)
+                
+                f = FaceWithAge(x=int(xyxy[0]),y=int(xyxy[1]),w=int(xyxy[2]-xyxy[0]), h=int(xyxy[3]-xyxy[1]), age=int(age), face_probability=float("%.2f" % conf.item()))# Rect(int(xyxy[0]),int(xyxy[1]), int(xyxy[2]-xyxy[0]), int(xyxy[3]-xyxy[1]), int(age), "%.2f" %  conf.item())
+
+                boxess.append(f)
+
+                # cv2.imwrite("f.jpg", face)
+                # cv2.waitKey(1)
+
+    return boxess #[b.data() for b in boxess]
+
+  def run_prediction(self, img_base64, img_file, threshold=0.6):
+
+    if img_base64 is not None:
+      im0 = self.readb64_cv(img_base64.split(",")[1])
+    else:
+      if img_file is not None:
+        im0 = read_img(img_file)
+      else:
+        return []
+
+    img = self.setup_img(im0) # img ready for yolo
+    return self.predict(img, im0, threshold)
+  
+  def run_prediction_with_age(self, age_model, img_base64, file_img, threshold=0.6):
+
+    if img_base64 is not None:
+      im0 = self.readb64_cv(img_base64.split(",")[1]) # orig image
+    else:
+      im0 = read_img(file_img)
+    img = self.setup_img(im0) # img ready for yolo
+    return self.predict_with_age(img, im0, threshold, age_model)
+
+def load_detection_model(weights_path):
+	imgsz = 320
+	device = select_device("cpu")
+
+	# Load model
+	model = attempt_load(weights_path, map_location=device)  # load FP32 model
+	stride = int(model.stride.max())  # model stride
+	imgsz = check_img_size(imgsz, s=stride)  # check img_size
+
+	return DetectionModel(model, stride, device, imgsz)

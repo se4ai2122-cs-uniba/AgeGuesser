@@ -52,6 +52,8 @@ from utils.loggers import Loggers
 from utils.callbacks import Callbacks
 
 
+import mlflow
+import yaml
 
 
 
@@ -82,6 +84,21 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
     opt.imgsz =imgsz 
         
 
+
+    params = None
+    with open("params.yaml", 'r') as fd:
+        params = yaml.safe_load(fd)
+    
+    
+    epochs = params['train']['epochs']
+    batch_size = params['train']['batch_size']
+    imgsz = params['train']['image_size']
+    opt.imgsz =imgsz 
+        
+    mlflow.log_param("epochs", epochs)
+    mlflow.log_param("batch_size", batch_size)
+    mlflow.log_param("image_size", imgsz)
+    
 
 
     # Directories
@@ -460,7 +477,15 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
 
     torch.cuda.empty_cache()
     
-
+    print("Precision: ",results[0])
+    print("Recall: ",results[1])
+    print("mAP:0.5: ",results[2])
+    print("mAP0.5:0.95: ",results[3])
+    
+    mlflow.log_metric("Precision",results[0])
+    mlflow.log_metric("Recall",results[1])
+    mlflow.log_metric("mAP 0.5",results[2])
+    mlflow.log_metric("mAP 0.5 0.95",results[3])
 
     return results
 
@@ -652,7 +677,13 @@ def run(**kwargs):
 
 
 if __name__ == "__main__":
-
+    import os
+    
+    os.system("databricks configure --host https://community.cloud.databricks.com")
+    mlflow.set_tracking_uri("databricks")
+    mlflow.set_experiment("/Users/n.marvulli1@studenti.uniba.it/Yolov5")
     opt = parse_opt()
+    mlflow.start_run()
     main(opt)
+    mlflow.end_run()
 

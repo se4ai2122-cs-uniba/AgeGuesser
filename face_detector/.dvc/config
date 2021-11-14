@@ -1,0 +1,4 @@
+[core]
+    remote = detector_drive
+['remote "detector_drive"']
+    url = gdrive://1uTwTmoKdzCivKMSah5ab0-UfjrD6cJB-

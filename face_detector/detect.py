@@ -35,7 +35,7 @@ from utils.general import (LOGGER, apply_classifier, check_file, check_img_size,
                            strip_optimizer, xyxy2xywh)
 from utils.plots import Annotator, colors
 from utils.torch_utils import load_classifier, select_device, time_sync
-
+import yaml
 
 @torch.no_grad()
 def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
@@ -283,7 +283,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         json.dump(data, f, ensure_ascii=False, indent=4) 
     # Print results
     t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
-    LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
+    #LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
     if save_txt or save_img:
         s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
         LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
@@ -319,7 +319,15 @@ def parse_opt():
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
     opt = parser.parse_args()
-    opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
+    
+    params = None
+    with open("params.yaml", 'r') as fd:
+        params = yaml.safe_load(fd)
+    
+    opt.imgsz = params['test']['image_size']
+    opt.conf_thres = params['test']['conf']
+    
+    opt.imgsz *= 2 if len(str(opt.imgsz)) == 1 else 1  # expand
     print_args(FILE.stem, opt)
     return opt
 

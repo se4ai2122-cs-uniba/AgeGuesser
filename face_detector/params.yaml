@@ -1,0 +1,13 @@
+preparation:
+  train_percentage: 0.9
+  validation_percentage: 0.08  
+  test_percentage: 0.02  
+
+train:
+  epochs: 1
+  batch_size: 32
+  image_size: 320
+
+test:
+  conf: 0.4
+  image_size: 320

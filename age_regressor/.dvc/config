@@ -1,0 +1,4 @@
+[core]
+    remote = regressor_drive
+['remote "regressor_drive"']
+    url = gdrive://1IOQzpd4WQkSehusQ3uVpzOA1gx6uXoVG

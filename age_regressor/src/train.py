@@ -3,6 +3,11 @@ import os
 from tensorflow.keras.applications import EfficientNetB0
 from tensorflow.keras import layers, callbacks
 from ruamel.yaml import YAML
+import mlflow
+
+# setup mlflow remote: databricks
+mlflow.set_tracking_uri("databricks")
+mlflow.set_experiment("/Users/mauroscianca98@gmail.com/AgeGuesser")
 
 def load_params():
     "Updates FULL_PARAMS with the values in params.yaml and returns all as a dictionary"
@@ -24,6 +29,7 @@ valid_ds = valid_list_ds_1
 
 num_train = len(list(train_ds))
 num_valid = len(list(valid_ds))
+
 
 AUTOTUNE = tf.data.AUTOTUNE
 
@@ -86,17 +92,19 @@ class CustomCallback(tf.keras.callbacks.Callback):
 
     def on_test_end(self, logs=None):
       # update mlflow metrics
-      pass
+      mlflow.log_metric("validation_mae", logs["mae"])
+      mlflow.log_metric("validation_mse", logs["mse"])
 
     def on_train_batch_end(self, batch, logs=None):
-      # update mlflow metrics
-      pass
+      if batch % 200 == 0:
+        mlflow.log_metric("train_mae", logs["mae"])
+        mlflow.log_metric("train_mse", logs["mse"])
 
 def scheduler(epoch, lr):
   lr_ = lr
   if epoch > 1:
     lr_ = lr_ * tf.math.exp(-0.15)
-
+  mlflow.log_metric("lr", float(lr_))
   return lr_
 
 cs = [
@@ -147,37 +155,32 @@ def build_model():
 
 model = build_model()
 
-def get_bin(age):
-    if age <= 10:
-      return 0
-    elif age > 10 and age <= 20:
-      return 1
-    elif age > 20 and age <= 30:
-      return 2
-    elif age > 30 and age <= 40:
-      return 3
-    elif age > 40 and age <= 50:
-      return 4
-    elif age > 50 and age <= 60:
-      return 5
-    elif age > 60 and age <= 70:
-      return 6
-    elif age > 70 :
-      return 7
-
 
 optimizer = tf.keras.optimizers.Adam(learning_rate=params["train"]["lr"])
 model.compile(
     optimizer=optimizer, loss="mae", metrics=["mse", "mae"]
 )
 
-model.fit(
-  train_ds,
-  steps_per_epoch= num_train // params["train"]["batch_size"],
-  callbacks=cs,
-  validation_data=valid_ds,
-  validation_steps= num_valid // params["train"]["batch_size"],
-  epochs=params["train"]["epochs"]
-)
+try:
+  mlflow.start_run()
+  mlflow.log_param("train_num_imgs", num_train)
+  mlflow.log_param("validation_num_imgs", num_valid)
+  mlflow.log_param("validation_train_ratio", num_valid / num_train)
+
+  mlflow.log_param("batch_size", params["train"]["batch_size"])
+  mlflow.log_param("epochs_tot", params["train"]["epochs"])
+  model.fit(
+    train_ds,
+    steps_per_epoch= num_train // params["train"]["batch_size"],
+    callbacks=cs,
+    validation_data=valid_ds,
+    validation_steps= num_valid // params["train"]["batch_size"],
+    epochs=params["train"]["epochs"]
+  )
+except KeyboardInterrupt:
+  print("training stopped by user..")
+
+mlflow.log_param("epochs_trained", cs[4].ep_)
+mlflow.end_run()
 
 print("training done!")

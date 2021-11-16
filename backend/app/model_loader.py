@@ -25,7 +25,7 @@ test_transforms = torchvision.transforms.Compose([
     torchvision.transforms.ToPILImage(),
     transforms.transforms.ToTensor(),
     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
-    torchvision.transforms.Resize((224, 224)),
+    torchvision.transforms.Resize((img_height, img_height)),
 ])
 
 def readb64_cv(base64_):
@@ -35,19 +35,14 @@ def readb64_cv(base64_):
     # pil_image.save('my-image.jpeg')
     open_cv_image = np.array(pil_image) 
     # Convert RGB to BGR 
-    img = open_cv_image[:, :, ::-1].copy() 
-
-    return img
+    return cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2BGR)
 
 def read_img(img_file):
     buf = io.BytesIO(img_file)
     pil_image = Image.open(buf).convert('RGB')
     # pil_image.save('my-image.jpeg')
     open_cv_image = np.array(pil_image) 
-    # Convert RGB to BGR 
-    img = open_cv_image[:, :, ::-1].copy() 
-
-    return img
+    return cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2BGR)
 
 
 class EstimationModel(object):
@@ -77,22 +72,12 @@ class EstimationModel(object):
               nn.Dropout(0.2),
               nn.LazyLinear(1)
     
-              
-          )
-          self.model2 = nn.Sequential(
-              
-              nn.Flatten(),
-              nn.LazyLinear(6)
           )
             
-      def forward(self, x, x_selfsup = None):
+      def forward(self, x):
           y_ = self.backbone(x)
           y_sup = self.model1(y_)
 
-          if x_selfsup is not None:
-            y_self_ = self.backbone(x_selfsup)
-            y_self = self.model2(y_self_)
-            return y_sup, y_self
           return y_sup
     resnet = timm.create_model('tf_efficientnetv2_b0', pretrained=False)
 
@@ -100,12 +85,10 @@ class EstimationModel(object):
         *list(resnet.children())[:-1]
     )
 
-    for p in backbone.parameters():  # reset requires_grad
-      p.requires_grad = False
+    model = AgeNetwork(backbone).to(torch.device('cpu'))
     
-    model = AgeNetwork(backbone)
-    model.to("cpu")
-    model.load_state_dict( torch.load(self.weights_path, map_location="cpu")["backbone_parameters"])
+    model.load_state_dict( torch.load(self.weights_path, map_location=torch.device('cpu'))["model_parameters"])
+    model.eval() # important
     return model
 
   def load_effnet_model_tf(self, ):
@@ -152,12 +135,12 @@ class EstimationModel(object):
     return prediction
 
   def predict_torch(self, img):
+
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    
     im = test_transforms(img).unsqueeze_(0)
     with torch.no_grad():
       y = self.model(im)
-    
+      
     return y[0]
   
   def run_age_estimation(self, img_in, file=None):
@@ -167,11 +150,14 @@ class EstimationModel(object):
       img = readb64_cv(img_in)
     else:
       if file is not None:
-        img = read_img(file)
+        img = read_img(file, )
+        
       else:
+        
         return FaceWithAge(age=-1, x=0, y=0, w=img.shape[1], h=img.shape[0])
-    
+
     return FaceWithAge(age=int(self.predict(img)), x=0, y=0, w=img.shape[1], h=img.shape[0])
+
 
 class DetectionModel(object):
     

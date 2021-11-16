@@ -7,7 +7,7 @@ from copy import deepcopy
 
 #test change username
 from app.model_loader import DetectionModel, EstimationModel, load_detection_model
-from backend.app.schemas import AgeEstimationResponse, EstimationModels
+from app.schemas import AgeEstimationResponse, EstimationModels,FaceDetectionModels, FaceDetectionResponse
 from fastapi import FastAPI, Request, File, Form
 from fastapi.datastructures import UploadFile
 
@@ -162,23 +162,23 @@ def _get_models_list_detection(request: Request,):
       </ul>",
     
   response_model=AgeEstimationResponse, ) 
-async def _post_models_age_predict(file: UploadFile = File(None, description="Image"), model: EstimationModels = Form("age_est_1", description="Model ID"), img_base64: str = Form(None, description="A base64 encoded image."), extract_faces: bool = Form(False, description="Extract the face(s) before running the age prediction.") ):
+async def _post_models_age_predict(file: UploadFile = File(None, description="Image"), model: EstimationModels = Form("effnetv1_b0", description="Model ID"), img_base64: str = Form(None, description="A base64 encoded image."), extract_faces: bool = Form(False, description="Extract the face(s) before running the age prediction.") ):
     
-    if model.value not in estimation_models:
+    if model.name not in estimation_models:
       return AgeEstimationResponse(
         faces=[],
         message="Unknown model. Please look at the available ones at /models.age.list",
         status=HTTPStatus.BAD_REQUEST
         )
      
-    model : EstimationModel = estimation_models[model.value]
+    model : EstimationModel = estimation_models[model.name]
     
     file_ = None
     if file is not None:
       file_ = await file.read()
 
     if extract_faces:
-      detection_model : DetectionModel = detection_models["face_det_1"]
+      detection_model : DetectionModel = detection_models["yolov5s"]
       return AgeEstimationResponse(
         faces=detection_model.run_prediction_with_age(model, img_base64, file_),
         message=HTTPStatus.OK.phrase,
@@ -187,6 +187,42 @@ async def _post_models_age_predict(file: UploadFile = File(None, description="Im
     else:
       return AgeEstimationResponse(
         faces=[model.run_age_estimation(img_base64, file_)],
+        message=HTTPStatus.OK.phrase,
+        status=HTTPStatus.OK
+        )
+
+@app.post("/models.face.predict", tags=["Prediction"], 
+summary="Detect faces in an image.",
+response_description="Bounding box data for each face that is detected: \
+  <br><ul>\
+    <li>x: x coordinate of the top-left corner</li>\
+    <li>y: y coordinate of the top-left corner</li>\
+    <li>w: width</li>\
+    <li>h: height</li>\
+    <li>face_probability: confidence of the model for the face detected</li>\
+  </ul>",
+response_model=FaceDetectionResponse)
+async def _post_models_face_predict(
+  file: UploadFile = File(None, description="Image"), 
+  model: FaceDetectionModels = Form("yolov5s", description="Model ID"), 
+  img_base64: str = Form(None, description="A base64 encoded image."), 
+  threshold: float = Form(0.6, description="Confidence threshold for face detection.") ):
+    
+    if model.name not in detection_models:
+      return FaceDetectionResponse(
+        faces=[],
+        message="Unknown model. Please look at the available ones at /models.face.list",
+        status=HTTPStatus.BAD_REQUEST
+        )
+
+    detection_model : DetectionModel = detection_models[model.name] 
+    
+    file_ = None
+    if file is not None:
+      file_ = await file.read()
+
+    return FaceDetectionResponse(
+        faces= detection_model.run_prediction(img_base64, file_, threshold),
         message=HTTPStatus.OK.phrase,
         status=HTTPStatus.OK
         )

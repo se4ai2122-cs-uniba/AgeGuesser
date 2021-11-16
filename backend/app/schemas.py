@@ -29,3 +29,8 @@ class FaceDetectionModels(Enum):
 class EstimationModels(Enum):
   effnetv1_b0 = "EfficientNet B0"
   effnetv2_b0_torch = "EfficientNetV2 B0"
+  
+class ListModels(Enum):
+  age = "age"
+  face = "face"
+  all = "all"  

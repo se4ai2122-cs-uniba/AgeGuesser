@@ -7,7 +7,7 @@ from copy import deepcopy
 
 #test change username
 from app.model_loader import DetectionModel, EstimationModel, load_detection_model
-from app.schemas import AgeEstimationResponse, EstimationModels,FaceDetectionModels, FaceDetectionResponse
+from app.schemas import AgeEstimationResponse, EstimationModels,FaceDetectionModels,ListModels, FaceDetectionResponse
 from fastapi import FastAPI, Request, File, Form
 from fastapi.datastructures import UploadFile
 
@@ -87,59 +87,53 @@ def _index(request: Request):
     return response
 
 
-@app.get("/models.list", tags=["Models"], summary="List available models.")
+@app.get("/models.{type}.list", tags=["Models"], summary="List available age estimation models.")
 @construct_response
-def _get_models_list(request: Request):
-
+def _get_models_list_estimation(request: Request,type: ListModels ):
+      
+    models_ = None
     models = deepcopy(models_info)
-    estimation_models_ = models["age_estimation"]
-    detection_models_ = models["face_detection"]
-    for key in estimation_models_:
-      del estimation_models_[key]["file_name"]
+
     
-    for key in detection_models_:
-      del detection_models_[key]["file_name"]
-    response = {
-        "message": HTTPStatus.OK.phrase,
-        "status-code": HTTPStatus.OK,
-        "data": models,
-    }
-
-    return response
-
-
-@app.get("/models.age.list", tags=["Models"], summary="List available age estimation models.")
-@construct_response
-def _get_models_list_estimation(request: Request,):
     
-    models = deepcopy(models_info)
-    estimation_models_ = models["age_estimation"]
-
-    for key in estimation_models_:
-      del estimation_models_[key]["file_name"]
-
-    response = {
-        "message": HTTPStatus.OK.phrase,
-        "status-code": HTTPStatus.OK,
-        "data": estimation_models_,
-    }
-    return response
-
-
-@app.get("/models.face.list", tags=["Models"], summary="List available face detection models.")
-@construct_response
-def _get_models_list_detection(request: Request,):
+    if type.name =="age":  
     
-    models = deepcopy(models_info)
-    detection_models_ = models["face_detection"]
+      models_ = models["age_estimation"]
 
-    for key in detection_models_:
-      del detection_models_[key]["file_name"]
+      for key in models_:
+        del models_[key]["file_name"]
+        
+    elif type.name =="face":
+          
+      models_ = models["face_detection"]
+
+      for key in models_:
+        del models_[key]["file_name"] 
+           
+    elif type.name == "all":
+          
+      estimation_models_ = models["age_estimation"]
+      detection_models_ = models["face_detection"]
+      
+      for key in estimation_models_:
+        del estimation_models_[key]["file_name"]
+      
+      for key in detection_models_:
+        del detection_models_[key]["file_name"]      
+        
+      models_ = models  
+      
+    else:
+      return {
+        "message": "Type must be either \"age\" or \"face\"",
+        "status-code": HTTPStatus.BAD_REQUEST
+      } 
+          
 
     response = {
         "message": HTTPStatus.OK.phrase,
         "status-code": HTTPStatus.OK,
-        "data": detection_models_,
+        "data": models_,
     }
     return response
 

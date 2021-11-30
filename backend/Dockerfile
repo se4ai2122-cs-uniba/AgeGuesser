@@ -7,6 +7,6 @@ RUN pip3 install --upgrade pip && pip3 install -r requirements.txt
 WORKDIR /app
 COPY . .
 
-EXPOSE 8000
+EXPOSE 80
 
-CMD ["gunicorn","-k", "uvicorn.workers.UvicornWorker", "-w", "1", "app.main:app","-b", "0.0.0.0", "-p", "8000", "--keyfile", "./privatekey.pem", "--certfile", "./public.crt"]
+CMD ["gunicorn","-k", "uvicorn.workers.UvicornWorker", "-w", "1", "app.main:app", "-b", "0.0.0.0:80"]

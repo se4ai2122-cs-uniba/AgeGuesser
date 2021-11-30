@@ -9,6 +9,7 @@ from copy import deepcopy
 from app.model_loader import DetectionModel, EstimationModel, load_detection_model
 from app.schemas import AgeEstimationResponse, EstimationModels,FaceDetectionModels,ListModels, FaceDetectionResponse
 from fastapi import FastAPI, Request, File, Form
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.datastructures import UploadFile
 
 
@@ -32,6 +33,15 @@ app = FastAPI(
     version="0.1",
 )
 
+origins = ["http://localhost:5000","http://localhost", "https://kub.k-stash.com/age", "https://age.kub.k-stash.com"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def construct_response(f):
     """Construct a JSON response for an endpoint's results."""
@@ -165,6 +175,7 @@ async def _post_models_age_predict(file: UploadFile = File(None, description="Im
         status=HTTPStatus.BAD_REQUEST
         )
      
+    print(model.name)
     model : EstimationModel = estimation_models[model.name]
     
     file_ = None

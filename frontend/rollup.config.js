@@ -39,7 +39,7 @@ export default {
 	},
 	plugins: [
 		replace({
-			BASE_URL : production ? "https://kub.k-stash.com": "http://localhost:8000"
+			BASE_URL : production ? "https://backend.ageguesser.com": "http://localhost:8000"
 		}),
 		svelte({
 			compilerOptions: {

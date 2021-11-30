@@ -116,8 +116,7 @@
 
 	<div class="row ">
 		<div class="col-12 text-center">
-			<h1>Age Guesser v0.1</h1>
-
+			<h1><img src="/magic-wand.png" alt="icon" style="width: 3rem;"> Age Guesser v0.1</h1>
 		</div>
 	</div>
 

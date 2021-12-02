@@ -32,7 +32,7 @@ export async function getModels() {
     },
   }).then((r) => r.json());
 
-  console.log(res.data)
+  //console.log(res.data)
  
   return res;
 }

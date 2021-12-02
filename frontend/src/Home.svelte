@@ -1,5 +1,6 @@
 <script>
 	import { getModels, upload } from "./api.js";
+	import { onMount } from 'svelte';
 	import Card from "./Card.svelte";
 
 	let fileinput;
@@ -23,6 +24,25 @@
 	let toElaborate = 0;
 
 	let ready = 2;
+
+	let extract_faces = true
+
+	let selected_model = {}
+	let models_meta = []
+
+	onMount(async () => {
+		
+		let _models_meta = (await getModels()).data
+		Object.keys(_models_meta).forEach(key => {
+		
+			models_meta.push({ "key": key,"name": _models_meta[key].backbone.replace("-", " ") })
+		});
+
+		selected_model = models_meta[0]
+
+		models_meta = models_meta
+	});
+
 	/*
 		Handle image(s) upload.
 	*/
@@ -67,6 +87,8 @@
 	};
 
 	async function go() {
+		/* console.log(selected_model)
+		console.log(extract_faces) */
 		imgsToBeHandled = imgsQueue;
 	}
 
@@ -80,14 +102,12 @@
 			img.img.isLoading = true;
 			imgs = imgs
 
-
 			console.log("SENDING... " + img.img.id);
 
-			/* todo: get values from form */
 			let payload = {
 				file: img.fileInput,
-				model: "EfficientNet B0",
-				extract_faces: true,
+				model: selected_model.name,
+				extract_faces: extract_faces,
 			};
 
 			let res = await upload(payload);
@@ -159,21 +179,19 @@
 						class="form-check-input"
 						type="checkbox"
 						id="inputPassword3"
-						checked
+						bind:checked={extract_faces}						
 					/>
 				</div>
 			</div>
 			<fieldset class="row mb-3">
 				<legend class="col-form-label col-sm-4 pt-0">Model</legend>
 				<div class="col-sm-8">
-					<!-- todo: get available models from backend -->
-					<select class="form-select" aria-label="Model select">
-						<option value="EfficientNet B0" selected
-							>EfficientNet B0</option
-						>
-						<option value="EfficientNetv2 B0"
-							>EfficientNetv2 B0</option
-						>
+
+					<select class="form-select" aria-label="Model select" bind:value={selected_model}>
+
+						{#each models_meta as item}
+						<option value={item}>{item.name}</option>
+						{/each}
 					</select>
 				</div>
 			</fieldset>

@@ -102,6 +102,8 @@
 		}
 		ready = 2;
 		imgsQueue = [];
+		let input = document.querySelector('input[type="file"]');
+		input.value= ""
 
 	}
 

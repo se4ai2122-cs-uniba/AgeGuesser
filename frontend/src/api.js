@@ -6,10 +6,10 @@ export async function upload(payload) {
 
   const formData = new FormData();
 
-  formData.append("file", payload["file"]);
-  formData.append("model", payload["model"]);
-  formData.append("extract_faces", payload["extract_faces"]);
-
+  Object.keys(payload).forEach(key => {
+    formData.append(key, payload[key]);
+  });
+  
   let res = await fetch("BASE_URL/models.age.predict", {
     method: "POST",
     body: formData,

@@ -166,7 +166,7 @@ def _get_models_list_estimation(request: Request,type: ListModels ):
       </ul>",
     
   response_model=AgeEstimationResponse, ) 
-async def _post_models_age_predict(file: UploadFile = File(None, description="Image"), model: EstimationModels = Form("effnetv1_b0", description="Model ID"), img_base64: str = Form(None, description="A base64 encoded image."), extract_faces: bool = Form(False, description="Extract the face(s) before running the age prediction.") ):
+async def _post_models_age_predict(file: UploadFile = File(None, description="Image"), model: EstimationModels = Form("effnetv1_b0", description="Model ID"), img_base64: str = Form(None, description="A base64 encoded image."), orientation: int = Form(0, description="Image orientation"), extract_faces: bool = Form(False, description="Extract the face(s) before running the age prediction.") ):
     
     if model.name not in estimation_models:
       return AgeEstimationResponse(
@@ -185,7 +185,7 @@ async def _post_models_age_predict(file: UploadFile = File(None, description="Im
     if extract_faces:
       detection_model : DetectionModel = detection_models["yolov5s"]
       return AgeEstimationResponse(
-        faces=detection_model.run_prediction_with_age(model, img_base64, file_),
+        faces=detection_model.run_prediction_with_age(model, img_base64, file_, orientation),
         message=HTTPStatus.OK.phrase,
         status=HTTPStatus.OK
         )

@@ -37,9 +37,13 @@ def readb64_cv(base64_):
     # Convert RGB to BGR 
     return cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2BGR)
 
-def read_img(img_file):
+def read_img(img_file, orientation=0):
     buf = io.BytesIO(img_file)
     pil_image = Image.open(buf).convert('RGB')
+    deg = {3:180,6:270,8:90}.get(orientation, 0)
+
+    if deg != 0:
+        pil_image=pil_image.rotate(deg, expand=True)
     # pil_image.save('my-image.jpeg')
     open_cv_image = np.array(pil_image) 
     return cv2.cvtColor(open_cv_image, cv2.COLOR_RGB2BGR)
@@ -270,13 +274,15 @@ class DetectionModel(object):
     img = self.setup_img(im0) # img ready for yolo
     return self.predict(img, im0, threshold)
   
-  def run_prediction_with_age(self, age_model, img_base64, file_img, threshold=0.6):
+  def run_prediction_with_age(self, age_model, img_base64, file_img, orientation, threshold=0.6,):
 
     if img_base64 is not None:
       im0 = self.readb64_cv(img_base64.split(",")[1]) # orig image
     else:
-      im0 = read_img(file_img)
+      im0 = read_img(file_img, orientation)
+    
     img = self.setup_img(im0) # img ready for yolo
+
     return self.predict_with_age(img, im0, threshold, age_model)
 
 def load_detection_model(weights_path):

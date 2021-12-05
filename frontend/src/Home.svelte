@@ -2,6 +2,7 @@
 	import { getModels, upload } from "./api.js";
 	import { onMount } from 'svelte';
 	import Card from "./Card.svelte";
+	import exifr from 'exifr'
 
 	let fileinput;
 
@@ -102,12 +103,19 @@
 			img.img.isLoading = true;
 			imgs = imgs
 
+			// mobile cameras often rotate images, even when they appear to be displayed in portrait
+			// get orientation metadata from image { 3: 180°, 6: 270°, 8: 90° }
+			let orientation = await exifr.orientation(document.getElementById("f-" + img.img.id)) 
+
+			//console.log(orientation)
+
 			console.log("SENDING... " + img.img.id);
 
 			let payload = {
 				file: img.fileInput,
 				model: selected_model.name,
 				extract_faces: extract_faces,
+				orientation: orientation == undefined ? 0 : orientation
 			};
 
 			let res = await upload(payload);
@@ -220,13 +228,7 @@
 </div>
 
 <style>
-	main {
-		text-align: center;
-		padding: 1em;
-
-		margin: 0 auto;
-	}
-
+	
 	h1 {
 		color: #ff3e00;
 		text-transform: uppercase;

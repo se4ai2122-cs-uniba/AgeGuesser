@@ -39,6 +39,7 @@ export default {
 	},
 	plugins: [
 		replace({
+			preventAssignment: true,
 			BASE_URL : production ? "https://backend.ageguesser.com": "http://localhost:8000"
 		}),
 		svelte({

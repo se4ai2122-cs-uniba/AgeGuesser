@@ -60,6 +60,7 @@
 				img: URL.createObjectURL(g),
 				predictions: [],
 				isLoading: false,
+				extract_faces: extract_faces
 			};
 
 			imgs.push(newImg);

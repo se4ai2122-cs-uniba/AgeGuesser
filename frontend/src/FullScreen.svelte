@@ -12,6 +12,9 @@
 
   let canvasPadding = 20;
 
+  function refreshCanvas() {
+    drawBoxes(true, data.predictions);
+  }
 
   function drawBoxes(clear, prediction) {
 
@@ -95,6 +98,7 @@
 
 </script>
 
+<svelte:window on:resize={refreshCanvas} />
 
 <div id="imgfull">
   <button  on:click={() => (show = !show)}>Close</button>

@@ -113,7 +113,7 @@
 
 			let payload = {
 				file: img.fileInput,
-				model: selected_model.name,
+				model: selected_model.key,
 				extract_faces: extract_faces,
 				orientation: orientation == undefined ? 0 : orientation
 			};

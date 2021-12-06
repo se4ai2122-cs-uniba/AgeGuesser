@@ -24,7 +24,9 @@ models_info = load_models_info()
 estimation_models = {}
 detection_models = {}
 
-
+estimation_models_info = {}
+detection_models_info = {}
+all_models_info = {}
 # Define application
 app = FastAPI(
     title="AgeGuesser API",
@@ -69,6 +71,9 @@ def construct_response(f):
 
 @app.on_event("startup")
 async def _load_models():
+  global estimation_models_info
+  global detection_models_info
+  global all_models_info
 
   estimation_models_ = models_info["age_estimation"]
   detection_models_ = models_info["face_detection"]
@@ -80,8 +85,22 @@ async def _load_models():
   for key in detection_models_:
     model_info = detection_models_[key]
     detection_models[key] = load_detection_model(model_info["file_name"])
+  
+  models = deepcopy(models_info)
+  models_ = models["age_estimation"]
+  for key in models_:
+    del models_[key]["file_name"]
+  
+  estimation_models_info = deepcopy(models_)
 
+  models_ = models["face_detection"]
+  for key in models_:
+    del models_[key]["file_name"]
+  
+  detection_models_info = deepcopy(models_)
 
+  all_models_info = deepcopy(estimation_models_info)
+  all_models_info.update(detection_models_info)
 
 
 @app.get("/", tags=["General"])  # path operation decorator
@@ -101,37 +120,18 @@ def _index(request: Request):
 @construct_response
 def _get_models_list_estimation(request: Request,type: ListModels ):
       
-    models_ = None
-    models = deepcopy(models_info)
 
-    
-    
     if type.name =="age":  
     
-      models_ = models["age_estimation"]
-
-      for key in models_:
-        del models_[key]["file_name"]
+      models_ = estimation_models_info
         
     elif type.name =="face":
           
-      models_ = models["face_detection"]
-
-      for key in models_:
-        del models_[key]["file_name"] 
+      models_ = detection_models_info
            
     elif type.name == "all":
           
-      estimation_models_ = models["age_estimation"]
-      detection_models_ = models["face_detection"]
-      
-      for key in estimation_models_:
-        del estimation_models_[key]["file_name"]
-      
-      for key in detection_models_:
-        del detection_models_[key]["file_name"]      
-        
-      models_ = models  
+      models_ = all_models_info
       
     else:
       return {
@@ -166,9 +166,9 @@ def _get_models_list_estimation(request: Request,type: ListModels ):
       </ul>",
     
   response_model=AgeEstimationResponse, ) 
-async def _post_models_age_predict(file: UploadFile = File(None, description="Image"), model: EstimationModels = Form("effnetv1_b0", description="Model ID"), img_base64: str = Form(None, description="A base64 encoded image."), orientation: int = Form(0, description="Image orientation"), extract_faces: bool = Form(False, description="Extract the face(s) before running the age prediction.") ):
+async def _post_models_age_predict(file: UploadFile = File(None, description="Image"), model: str = Form("effnetv1_b0", description="Model ID"), img_base64: str = Form(None, description="A base64 encoded image."), orientation: int = Form(0, description="Image orientation"), extract_faces: bool = Form(False, description="Extract the face(s) before running the age prediction.") ):
     
-    if model.name not in estimation_models:
+    if model not in estimation_models:
       return AgeEstimationResponse(
         faces=[],
         message="Unknown model. Please look at the available ones at /models.age.list",
@@ -176,7 +176,7 @@ async def _post_models_age_predict(file: UploadFile = File(None, description="Im
         )
      
     #print(model.name)
-    model : EstimationModel = estimation_models[model.name]
+    model : EstimationModel = estimation_models[model]
     
     file_ = None
     if file is not None:

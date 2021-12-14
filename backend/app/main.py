@@ -11,12 +11,14 @@ from app.schemas import AgeEstimationResponse, EstimationModels,FaceDetectionMod
 from fastapi import FastAPI, Request, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.datastructures import UploadFile
+from .monitoring import instrumentator
+from prometheus_client import start_http_server, Counter, Gauge, Histogram, Summary
+import time
 
 
 def load_models_info():
   with open("release_models/models.json", "r") as f:
     return json.load(f)
-
 
 models_info = load_models_info()
 
@@ -27,6 +29,7 @@ detection_models = {}
 estimation_models_info = {}
 detection_models_info = {}
 all_models_info = {}
+
 # Define application
 app = FastAPI(
     title="AgeGuesser API",
@@ -35,6 +38,69 @@ app = FastAPI(
     version="0.1",
 )
 
+instrumentator.instrument(app).expose(app, include_in_schema=False, should_gzip=True)
+
+METRIC_PORT = 8181
+
+#Counter
+REQUEST_TOTAL = Counter('app_http_request_count', 'Total App HTTP Request')
+REQUEST_TOTAL_WITH_LABEL = Counter('app_http_request_count_with_label', 'Total App HTTP Request With Labels', ['endpoint'])
+
+#Gauge
+REQUEST_INPROGRESS = Gauge('app_http_request_inprogress', 'Current In Progress App HTTP Request')
+REQUEST_LAST_SERVED = Gauge('app_http_request_lastserved', 'Last Served HTTP Request')
+
+#Histogram
+REQUEST_RESPOND_TIME = Histogram('app_http_respond_time', 'App Repond Time')
+REQUEST_RESPOND_TIME_CUSTOM_BUCKETS = Histogram('app_http_respond_time_custom_bucket', 'App Repond Time Custom Bucket',buckets=[0.1,0.5,1,2,3,4,5])
+
+#Summary
+REQUEST_LATENCY_SECONDS = Summary('request_latency_seconds', 'Description of summary')
+
+
+
+#Counter
+@app.middleware("http")
+async def triggered_counter(request: Request, call_next):
+    
+    # increase request total value
+    REQUEST_TOTAL.inc()
+    REQUEST_TOTAL_WITH_LABEL.labels(request.url.path).inc()
+
+    response = await call_next(request)
+    return response
+  
+#Gauge
+@app.middleware("http")
+@REQUEST_INPROGRESS.track_inprogress()
+async def triggered_gauge(request: Request, call_next):
+    REQUEST_INPROGRESS.inc()
+    response = await call_next(request)
+    REQUEST_INPROGRESS.dec()
+    REQUEST_LAST_SERVED.set(time.time())
+    return response
+  
+#Histogram
+@app.middleware("http")
+async def triggered_histogram(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    request_duration = time.time() - start_time
+    REQUEST_RESPOND_TIME.observe(request_duration)
+    REQUEST_RESPOND_TIME_CUSTOM_BUCKETS.observe(request_duration)
+    return response
+
+#Summary
+@app.middleware("http")
+async def triggered_summary(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    request_duration = time.time() - start_time
+    REQUEST_LATENCY_SECONDS.observe(request_duration)
+    return response
+  
+  
+    
 origins = ["http://localhost:5000","http://localhost","https://ageguesser.com", ]
 
 app.add_middleware(
@@ -71,6 +137,10 @@ def construct_response(f):
 
 @app.on_event("startup")
 async def _load_models():
+  
+  start_http_server(port=METRIC_PORT)
+
+  
   global estimation_models_info
   global detection_models_info
   global all_models_info
@@ -113,6 +183,7 @@ def _index(request: Request):
         "status-code": HTTPStatus.OK,
         "data": {"message": "Welcome to AgeGuesser! Please, read the `/docs`!"},
     }
+    
     return response
 
 

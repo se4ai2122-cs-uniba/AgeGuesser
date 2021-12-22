@@ -24,7 +24,7 @@ stages:
     - runs/train/results/weights/best.pt
   
   test:
-    cmd: python3 detect.py --weights "runs/train/results/weights/best.pt" --source "dataset/yolo/test/images"
+    cmd: python3 val.py --weights "runs/train/results/weights/best.pt" --data "dataset/yolo/data.yaml" --task "test"
     deps:
     - dataset/yolo/test/images
     - runs/train/results/weights/best.pt
@@ -33,4 +33,4 @@ stages:
       - test.conf
       - train.image_size    
     outs:
-    - test.json
+    - test.csv

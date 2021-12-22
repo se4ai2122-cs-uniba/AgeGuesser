@@ -2,6 +2,7 @@ absl-py==1.0.0
 anyio==3.4.0
 asgiref==3.4.1
 astunparse==1.6.3
+attrs==21.2.0
 Brotli==1.0.9
 cachetools==4.2.4
 certifi==2021.10.8
@@ -10,6 +11,7 @@ click==8.0.3
 ConfigArgParse==1.5.3
 cycler==0.11.0
 fastapi==0.70.0
+Flask==2.0.2
 Flask-BasicAuth==0.2.0
 Flask-Cors==3.0.10
 flatbuffers==2.0
@@ -27,6 +29,7 @@ h11==0.12.0
 h5py==3.6.0
 idna==3.3
 importlib-metadata==4.8.2
+iniconfig==1.1.1
 itsdangerous==2.0.1
 Jinja2==3.0.3
 keras==2.7.0
@@ -45,12 +48,15 @@ opt-einsum==3.3.0
 packaging==21.3
 pandas==1.3.4
 Pillow==8.4.0
+pluggy==1.0.0
 protobuf==3.19.1
 psutil==5.8.0
+py==1.11.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pydantic==1.8.2
 pyparsing==3.0.6
+pytest==6.2.5
 python-dateutil==2.8.2
 python-multipart==0.0.5
 pytz==2021.3
@@ -74,6 +80,7 @@ tensorflow-estimator==2.7.0
 tensorflow-io-gcs-filesystem==0.22.0
 termcolor==1.1.0
 timm==0.4.12
+toml==0.10.2
 tomli==1.2.2
 torch==1.10.0
 torchvision==0.11.1

@@ -1,4 +1,4 @@
-# AgeGusser
+# AgeGuesser
 
 AgeGuesser is an end-to-end, deep-learning based, Age Estimation system. 
 

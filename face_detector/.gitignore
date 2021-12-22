@@ -2,3 +2,4 @@
 /dataset
 /test.json
 /runs/*
+/yolov5s.pt

@@ -144,7 +144,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
     # Run inference
     if pt and device.type != 'cpu':
-        model(torch.zeros(1, 3, *imgsz).to(device).type_as(next(model.parameters())))  # run once
+        model(torch.zeros(1, 3,imgsz,imgsz).to(device).type_as(next(model.parameters())))  # run once
     dt, seen = [0.0, 0.0, 0.0], 0
     
     counter = -1

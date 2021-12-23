@@ -1,8 +1,6 @@
 name: Testing
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -26,4 +24,9 @@ jobs:
         cd backend
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=utils/*
-
+    - name: Test with pytest
+      run: |
+        cd backend
+        wget ${{ secrets.MODELS_URL }}
+        unzip -o release_models.zip
+        pytest test

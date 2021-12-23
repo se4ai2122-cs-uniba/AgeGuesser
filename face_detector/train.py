@@ -406,6 +406,11 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
                                            plots=False,
                                            callbacks=callbacks,
                                            compute_loss=compute_loss)
+                
+                mlflow.log_metric("train_precision",results[0])
+                mlflow.log_metric("train_recall",results[1])
+                mlflow.log_metric("train_mAP0.5",results[2])
+                mlflow.log_metric("train_mAP0.5_.95",results[3])                                           
 
             # Update best mAP
             fi = fitness(np.array(results).reshape(1, -1))  # weighted combination of [P, R, mAP@.5, mAP@.5-.95]
@@ -477,15 +482,7 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
 
     torch.cuda.empty_cache()
     
-    print("Precision: ",results[0])
-    print("Recall: ",results[1])
-    print("mAP:0.5: ",results[2])
-    print("mAP0.5:0.95: ",results[3])
-    
-    mlflow.log_metric("Precision",results[0])
-    mlflow.log_metric("Recall",results[1])
-    mlflow.log_metric("mAP 0.5",results[2])
-    mlflow.log_metric("mAP 0.5 0.95",results[3])
+   
 
     return results
 

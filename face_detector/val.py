@@ -240,14 +240,37 @@ def run(data,
     else:
         nt = torch.zeros(1)
 
+
     # Print results
     pf = '%20s' + '%11i' * 2 + '%11.3g' * 4  # print format
     LOGGER.info(pf % ('all', seen, nt.sum(), mp, mr, map50, map))
+
+    import json
+    import mlflow
+    
+
+    mlflow.log_metric("val_f1",round(f1.mean(),2))
+    mlflow.log_metric("val_precision",round(mp,2))
+    mlflow.log_metric("val_recall",round(mr,2))
+    mlflow.log_metric("val_mAP0.5",round(map50,2))
+    mlflow.log_metric("val_mAP0.5_.95",round(map,2))   
+
+    with open("test.csv","w") as f:
+      f.write("f1,P,R,mAP@.5,mAP@.5:.95\n")
+
+      data = ','.join([str(i) for i in [f1.mean(),mp,mr,map50,map]])
+
+
+      f.write(data + "\n")
+
+      
+
 
     # Print results per class
     if (verbose or (nc < 50 and not training)) and nc > 1 and len(stats):
         for i, c in enumerate(ap_class):
             LOGGER.info(pf % (names[c], seen, nt[c], p[i], r[i], ap50[i], ap[i]))
+
 
     # Print speeds
     t = tuple(x / seen * 1E3 for x in dt)  # speeds per image

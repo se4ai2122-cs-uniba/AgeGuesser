@@ -4,7 +4,7 @@ preparation:
   test_percentage: 0.02  
 
 train:
-  epochs: 1
+  epochs: 100
   batch_size: 32
   image_size: 320
 

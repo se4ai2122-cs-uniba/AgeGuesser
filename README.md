@@ -1,5 +1,8 @@
 # AgeGuesser
 
+![Testing](https://github.com/se4ai2122-cs-uniba/AgeGuesser/actions/workflows/testing.yaml/badge.svg)
+![Deployment](https://github.com/se4ai2122-cs-uniba/AgeGuesser/actions/workflows/build_and_deploy.yaml/badge.svg)
+
 AgeGuesser is an end-to-end, deep-learning based, Age Estimation system. 
 
 It is made of a face detection (Yolov5) and age regression model (EfficientNet).

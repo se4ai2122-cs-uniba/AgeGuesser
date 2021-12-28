@@ -1,3 +1,4 @@
-.dvc
-dataset
+dataset/train/**
+dataset/validation/**
+dataset/test/**
 .databrickscfg

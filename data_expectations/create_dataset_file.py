@@ -1,6 +1,3 @@
-import os
-import shutil
-import glob
 from PIL import Image
 
 def create(filename,dataset):

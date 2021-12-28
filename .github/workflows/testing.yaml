@@ -3,6 +3,9 @@ name: Testing
 on:
   pull_request:
     branches: [ master ]
+    paths:
+      - "backend/app/main.py"
+      - "backend/app/model_loader.py"
 
 jobs:
   testing:

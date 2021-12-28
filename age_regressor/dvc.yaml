@@ -1,6 +1,6 @@
 stages:
   extract:
-    cmd: unzip -n "dataset/dataset.zip" -d "dataset"
+    cmd: unzip -qq -n "dataset/dataset.zip" -d "dataset"
     deps:
      - dataset/dataset.zip
     outs:

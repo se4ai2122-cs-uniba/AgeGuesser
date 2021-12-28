@@ -74,3 +74,17 @@ stages:
     - path: runs/test.json
       md5: 79965a082d5369a3f9966fcb7fc7b263
       size: 53
+  validate:
+    cmd: python3 src/validate_data.py
+    deps:
+    - path: dataset/dataset.zip
+      md5: 27fd3a8de7fe5b6601385daaa7d6fbf2
+      size: 1197272868
+    - path: dataset/state.txt
+      md5: 1f88efd9f39f4a92cf55ea25585d182a
+      size: 24
+    outs:
+    - path: dataset/data_valid_result.txt
+      md5: b24b4a317ccc4a74e4729672ee526671
+      size: 28
+      isexec: true

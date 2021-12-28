@@ -3,3 +3,5 @@
 /train.txt
 /test.txt
 /validation.txt
+/data_valid_result.txt
+meta_*

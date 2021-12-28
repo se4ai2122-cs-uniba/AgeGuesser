@@ -8,9 +8,17 @@ stages:
     outs:
     - dataset/yolo/state.txt 
 
+  validate:
+    cmd: python3 validate.py 
+    deps:
+      - dataset/yolo/state.txt
+    outs:
+      - dataset/data_valid_result.txt
+
   train:
     cmd: python3 train.py --data "dataset/yolo/data.yaml" --cfg ./models/yolov5s.yaml --weights "yolov5s.pt" --name results  --cache 
     deps:
+    - dataset/data_valid_result.txt
     - dataset/yolo/state.txt 
     - dataset/yolo/data.yaml
     - models/yolov5s.yaml

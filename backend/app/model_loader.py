@@ -1,3 +1,4 @@
+from http import HTTPStatus
 import tensorflow as tf
 from tensorflow.keras.applications import EfficientNetB0
 from tensorflow.keras import layers
@@ -151,16 +152,18 @@ class EstimationModel(object):
     img = None
 
     if img_in is not None:
-      img = readb64_cv(img_in)
+      try:
+        img = readb64_cv(img_in)
+      except:
+        return { "faces" : [], "status": HTTPStatus.BAD_REQUEST, "msg": "Invalid base64-encoded image."}
     else:
-      if file is not None:
+      try:
         img = read_img(file, )
-        
-      else:
-        
-        return FaceWithAge(age=-1, x=0, y=0, w=img.shape[1], h=img.shape[0])
-
-    return FaceWithAge(age=int(self.predict(img)), x=0, y=0, w=img.shape[1], h=img.shape[0])
+      except:
+        return { "faces" : [], "status": HTTPStatus.BAD_REQUEST, "msg": "Invalid image."}
+    
+    return { "faces" : [FaceWithAge(age=int(self.predict(img)), x=0, y=0, w=img.shape[1], h=img.shape[0]) ],
+              "status": HTTPStatus.OK, "msg": HTTPStatus.OK.phrase }
 
 
 class DetectionModel(object):
@@ -264,26 +267,37 @@ class DetectionModel(object):
   def run_prediction(self, img_base64, img_file, threshold=0.6):
 
     if img_base64 is not None:
-      im0 = self.readb64_cv(img_base64.split(",")[1])
+      try:
+        im0 = self.readb64_cv(img_base64.split(",")[1])
+      except:
+        return { "faces" : [], "status": HTTPStatus.BAD_REQUEST, "msg": "Invalid base64-encoded image."}
     else:
-      if img_file is not None:
+      try:
         im0 = read_img(img_file)
-      else:
-        return []
+      except:
+        return { "faces" : [], "status": HTTPStatus.BAD_REQUEST, "msg": "Invalid image."}
+
 
     img = self.setup_img(im0) # img ready for yolo
-    return self.predict(img, im0, threshold)
+    return { "faces": self.predict(img, im0, threshold), "status": HTTPStatus.OK, "msg": HTTPStatus.OK.phrase}
   
   def run_prediction_with_age(self, age_model, img_base64, file_img, orientation, threshold=0.6,):
 
     if img_base64 is not None:
-      im0 = self.readb64_cv(img_base64.split(",")[1]) # orig image
+      try:
+        im0 = self.readb64_cv(img_base64.split(",")[1]) # orig image
+      except:
+        return { "faces" : [], "status": HTTPStatus.BAD_REQUEST, "msg": "Invalid base64-encoded image."}
     else:
-      im0 = read_img(file_img, orientation)
+      try:
+        im0 = read_img(file_img, orientation)
+      except:
+        return { "faces" : [], "status": HTTPStatus.BAD_REQUEST, "msg": "Invalid image."}
     
     img = self.setup_img(im0) # img ready for yolo
 
-    return self.predict_with_age(img, im0, threshold, age_model)
+    return { "faces": self.predict_with_age(img, im0, threshold, age_model), "status": HTTPStatus.OK, "msg": HTTPStatus.OK.phrase}
+
 
 def load_detection_model(weights_path):
 	imgsz = 320

@@ -10,6 +10,12 @@ def image_file():
     }
 
 @pytest.fixture
+def wrong_image_file():
+    return {
+        'file': ('img_base64.jpg', open('img_base64.jpg', 'rb')),
+    }
+
+@pytest.fixture
 def image_base64():
     with open("img_base64.jpg", "rb") as f:
         return f.read()
@@ -48,9 +54,10 @@ with TestClient(app) as client:
         assert response.json()["method"] == "GET"    
         assert response.json()["data"] == {"message":"Welcome to AgeGuesser! Please, read the `/docs`!"}
         
-    def test_models_age_list():
+    @pytest.mark.parametrize("type", ["age", "face", "all"])
+    def test_models_age_list(type):
         
-        response = client.get("/models.age.list")
+        response = client.get("/models.%s.list"%type)
 
         json_ = response.json()
          
@@ -109,6 +116,16 @@ with TestClient(app) as client:
         assert "invalid" in json_["message"].lower()
         assert json_["status"] == HTTPStatus.BAD_REQUEST
     
+    def test_model_age_predict_invalid_imgfile(wrong_image_file, default_age_predict_payload):
+
+        response = client.post("/models.age.predict", data=default_age_predict_payload, files=wrong_image_file )
+        
+        json_ = response.json()
+        assert response.status_code == 200
+        assert len(json_["faces"]) == 0
+        assert "invalid" in json_["message"].lower()
+        assert json_["status"] == HTTPStatus.BAD_REQUEST
+    
     def test_model_wrong_model(default_age_predict_payload):
 
         default_age_predict_payload["model"] = "effnetv1_bO_with_typo"
@@ -140,4 +157,24 @@ with TestClient(app) as client:
         
         assert response.status_code == 200
         assert len(json_["faces"]) == 6
+    
+    def test_model_face_predict_file_threshold_not_le(image_file, default_face_predict_payload):
+
+        default_face_predict_payload["threshold"] = 1.1
+        response = client.post("/models.face.predict", data=default_face_predict_payload, files=image_file)
+        
+        json_ = response.json()
+        
+        assert response.status_code == 422
+        assert json_["detail"][0]["type"] == "value_error.number.not_le"
+    
+    def test_model_face_predict_file_threshold_not_ge(image_file, default_face_predict_payload):
+
+        default_face_predict_payload["threshold"] = -0.9
+        response = client.post("/models.face.predict", data=default_face_predict_payload, files=image_file)
+        
+        json_ = response.json()
+        
+        assert response.status_code == 422
+        assert json_["detail"][0]["type"] == "value_error.number.not_ge"
     

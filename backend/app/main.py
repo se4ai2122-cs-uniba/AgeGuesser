@@ -162,19 +162,39 @@ def _get_models_list_estimation(request: Request,type: ListModels ):
   description="Run the Age Estimation model of choice on an image (uploaded as file or base64-encoded).<br> \
     <ul>\
     <li>If <b>extract_faces</b> is set to true, a face detection model will extract the faces first, then the age will be predicted for each one of them.</li>\
-    <li>If both <b>file</b> and <b>img_base64</b> are set, only the latter will be taken into account.</li>\
+    <li>If both <b>file</b> and <b>img_base64</b> are set, <b>only</b> the former will be taken into account.</li>\
+    <li>The <b>orientation</b> field represents the input image orientation, according to the Exif standard. It supports the following rotation values: 0 (0°), 6 (90°) and 8 (270°).\
+      For more info check this <a target='_blank' href='https://sirv.com/help/articles/rotate-photos-to-be-upright/'>link</a></li>  \
       </ul>",
     
   response_model=AgeEstimationResponse, ) 
-async def _post_models_age_predict(file: UploadFile = File(None, description="Image"), model: str = Form("effnetv1_b0", description="Model ID"), img_base64: str = Form(None, description="A base64 encoded image."), orientation: int = Form(0, description="Image orientation"), extract_faces: bool = Form(False, description="Extract the face(s) before running the age prediction.") ):
-    
+async def _post_models_age_predict(
+  file: UploadFile = File(None, description="Image"), 
+  model: str = Form("effnetv1_b0", description="Model ID"), 
+  img_base64: str = Form(None, description="A base64 encoded image."), 
+  orientation: int = Form(0, description="Image orientation according to the Exif standard. Supported values: 0 (0°), 6 (90°) and 8 (270°)."), 
+  extract_faces: bool = Form(True, description="Extract face(s) before running the age prediction.") ):
+
     if model not in estimation_models:
       return AgeEstimationResponse(
         faces=[],
         message="Unknown model. Please look at the available ones at /models.age.list",
         status=HTTPStatus.BAD_REQUEST
         )
-     
+    
+    # Assure image-file has priority 
+    if file != None:
+      img_base64 = None
+    else:
+      file = None
+
+    if file == None and img_base64 == None:
+      return AgeEstimationResponse(
+        faces=[],
+        message="Please upload an image file or a base64-encoded one.",
+        status=HTTPStatus.BAD_REQUEST
+        )
+    
     #print(model.name)
     model : EstimationModel = estimation_models[model]
     
@@ -184,17 +204,15 @@ async def _post_models_age_predict(file: UploadFile = File(None, description="Im
 
     if extract_faces:
       detection_model : DetectionModel = detection_models["yolov5s"]
-      return AgeEstimationResponse(
-        faces=detection_model.run_prediction_with_age(model, img_base64, file_, orientation),
-        message=HTTPStatus.OK.phrase,
-        status=HTTPStatus.OK
-        )
+      prediction_result = detection_model.run_prediction_with_age(model, img_base64, file_, orientation)
     else:
-      return AgeEstimationResponse(
-        faces=[model.run_age_estimation(img_base64, file_)],
-        message=HTTPStatus.OK.phrase,
-        status=HTTPStatus.OK
-        )
+      prediction_result = model.run_age_estimation(img_base64, file_)
+    
+    return AgeEstimationResponse(
+      faces=prediction_result["faces"],
+      message=prediction_result["msg"],
+      status=prediction_result["status"]
+      )
 
 @app.post("/models.face.predict", tags=["Prediction"], 
 summary="Detect faces in an image.",
@@ -209,25 +227,26 @@ response_description="Bounding box data for each face that is detected: \
 response_model=FaceDetectionResponse)
 async def _post_models_face_predict(
   file: UploadFile = File(None, description="Image"), 
-  model: FaceDetectionModels = Form("yolov5s", description="Model ID"), 
-  img_base64: str = Form(None, description="A base64 encoded image."), 
-  threshold: float = Form(0.6, description="Confidence threshold for face detection.") ):
+  model: str = Form("yolov5s", description="Model ID"), 
+  img_base64: str = Form(None, description="A base64-encoded image."), 
+  threshold: float = Form(0.6, ge=0.0, le=1.0, description="Confidence threshold for face detection.") ):
     
-    if model.name not in detection_models:
+    if model not in detection_models:
       return FaceDetectionResponse(
         faces=[],
         message="Unknown model. Please look at the available ones at /models.face.list",
         status=HTTPStatus.BAD_REQUEST
         )
 
-    detection_model : DetectionModel = detection_models[model.name] 
+    detection_model : DetectionModel = detection_models[model] 
     
     file_ = None
     if file is not None:
       file_ = await file.read()
 
+    prediction_result = detection_model.run_prediction(img_base64, file_, threshold)
     return FaceDetectionResponse(
-        faces= detection_model.run_prediction(img_base64, file_, threshold),
-        message=HTTPStatus.OK.phrase,
-        status=HTTPStatus.OK
+        faces=prediction_result["faces"],
+        message=prediction_result["msg"],
+        status=prediction_result["status"]
         )

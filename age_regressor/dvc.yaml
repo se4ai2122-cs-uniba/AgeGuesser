@@ -1,14 +1,21 @@
 stages:
   extract:
-    cmd: unzip -n "dataset/dataset.zip" -d "dataset"
+    cmd: unzip -qq -n "dataset/dataset.zip" -d "dataset"
     deps:
      - dataset/dataset.zip
     outs:
      - dataset/state.txt
+  validate:
+    cmd: python3 src/validate_data.py 
+    deps:
+     - dataset/dataset.zip
+     - dataset/state.txt
+    outs:
+     - dataset/data_valid_result.txt
   prepare:
     cmd: python3 src/prepare.py 
     deps:
-    - dataset/state.txt
+    - dataset/data_valid_result.txt
     - src/prepare.py
     params:
     - prepare.train
@@ -17,7 +24,7 @@ stages:
     - dataset/train.txt
     - dataset/test.txt
     - dataset/validation.txt
-
+  
   train:
     cmd: python3 src/train.py 
     deps:
@@ -36,6 +43,7 @@ stages:
     cmd: python3 src/evaluate.py 
     deps:
     - dataset/test.txt
+    - models/best_val_loss.h5
     - src/evaluate.py
     params:
     - test.batch_size

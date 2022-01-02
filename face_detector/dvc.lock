@@ -4,15 +4,15 @@ stages:
     cmd: python3 prepare.py
     deps:
     - path: dataset.zip
-      md5: dbc836a68a04871e7f824743064a09f1
-      size: 263241212
+      md5: 49191916da91a08cd3c11c3fe0b83b7f
+      size: 263124681
     - path: prepare.py
       md5: 8c90925dc08c89de0b0e124f2ca59d95
       size: 2783
     outs:
     - path: dataset/yolo/state.txt
-      md5: 889e0d7343405c079195e7b8903c8c9e
-      size: 6
+      md5: 58f799990260c5c1ab883df2ffc76fac
+      size: 14
   train:
     cmd: python3 train.py --data "dataset/yolo/data.yaml" --cfg ./models/yolov5s.yaml
       --weights "yolov5s.pt" --name results  --cache
@@ -63,3 +63,13 @@ stages:
     - path: test.json
       md5: 7cf48774cc650f1a818c12999fb4be70
       size: 24634
+  validate:
+    cmd: python3 validate.py
+    deps:
+    - path: dataset/yolo/state.txt
+      md5: 58f799990260c5c1ab883df2ffc76fac
+      size: 14
+    outs:
+    - path: dataset/data_valid_result.txt
+      md5: 7870823676ed35f75c31d6dd59b26412
+      size: 18

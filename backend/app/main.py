@@ -56,7 +56,7 @@ def construct_response(f):
         response = {
             "message": results["message"],
             "method": request.method,
-            "status-code": results["status-code"],
+            "status-code": results["status"],
             "timestamp": datetime.now().isoformat(),
             "url": request.url._url,
         }
@@ -110,7 +110,7 @@ def _index(request: Request):
 
     response = {
         "message": HTTPStatus.OK.phrase,
-        "status-code": HTTPStatus.OK,
+        "status": HTTPStatus.OK,
         "data": {"message": "Welcome to AgeGuesser! Please, read the `/docs`!"},
     }
     return response
@@ -135,14 +135,14 @@ def _get_models_list_estimation(request: Request,type: ListModels ):
       
     else:
       return {
-        "message": "Type must be either \"age\" or \"face\"",
-        "status-code": HTTPStatus.BAD_REQUEST
+        "message": "Type must be either \"age\", \"face\" or \"all\"",
+        "status": HTTPStatus.BAD_REQUEST
       } 
           
 
     response = {
         "message": HTTPStatus.OK.phrase,
-        "status-code": HTTPStatus.OK,
+        "status": HTTPStatus.OK,
         "data": models_,
     }
     return response
@@ -195,7 +195,6 @@ async def _post_models_age_predict(
         status=HTTPStatus.BAD_REQUEST
         )
     
-    #print(model.name)
     model : EstimationModel = estimation_models[model]
     
     file_ = None
@@ -235,6 +234,19 @@ async def _post_models_face_predict(
       return FaceDetectionResponse(
         faces=[],
         message="Unknown model. Please look at the available ones at /models.face.list",
+        status=HTTPStatus.BAD_REQUEST
+        )
+
+    # Assure image-file has priority 
+    if file != None:
+      img_base64 = None
+    else:
+      file = None
+    
+    if file == None and img_base64 == None:
+      return AgeEstimationResponse(
+        faces=[],
+        message="Please upload an image file or a base64-encoded one.",
         status=HTTPStatus.BAD_REQUEST
         )
 

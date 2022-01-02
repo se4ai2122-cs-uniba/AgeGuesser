@@ -6,6 +6,7 @@ on:
     paths:
       - "backend/app/main.py"
       - "backend/app/model_loader.py"
+      - "backend/test"
 
 jobs:
   testing:

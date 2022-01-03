@@ -1,7 +1,9 @@
 from http import HTTPStatus
 from fastapi.testclient import TestClient
-from app.main import app
+from app.main import app, estimation_models
 import pytest
+import json
+from app.model_loader import EstimationModel, readb64_cv
 
 @pytest.fixture
 def image_file():
@@ -17,7 +19,7 @@ def wrong_image_file():
 
 @pytest.fixture
 def image_base64():
-    with open("img_base64.jpg", "rb") as f:
+    with open("img_base64.jpg", "r") as f:
         return f.read()
 
 
@@ -42,9 +44,46 @@ def default_face_predict_payload():
             }
     return payload
 
+
 with TestClient(app) as client:
 
+    @pytest.mark.parametrize("model_name", ["effnetv1_b0", "effnetv2_b0_torch"])
+    def test_base64_predict(model_name, image_base64, ):
+
+        model : EstimationModel = estimation_models[model_name]
+
+        result = model.run_age_estimation(image_base64, None)
+
+        assert len(result["faces"]) == 1
     
+    @pytest.mark.parametrize("model_name", ["effnetv1_b0", "effnetv2_b0_torch"])
+    def test_base64_predict_wrong(model_name, ):
+
+        model : EstimationModel = estimation_models[model_name]
+
+        result = model.run_age_estimation("somedummybase64", None)
+
+        assert len(result["faces"]) == 0
+
+    @pytest.mark.parametrize("model_name", ["effnetv1_b0", "effnetv2_b0_torch"])
+    def test_file_predict(model_name):
+
+        model : EstimationModel = estimation_models[model_name]
+
+        with open('img.jpg', 'rb') as f:
+            result = model.run_age_estimation(None, f.read())
+
+        assert len(result["faces"]) == 1
+    
+    @pytest.mark.parametrize("model_name", ["effnetv1_b0", "effnetv2_b0_torch"])
+    def test_file_predict_wrong(model_name):
+
+        model : EstimationModel = estimation_models[model_name]
+
+        with open('img_base64.jpg', 'rb') as f:
+            result = model.run_age_estimation(None, f.read())
+
+        assert len(result["faces"]) == 0
 
     def test_index():
         response = client.get("/")

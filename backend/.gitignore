@@ -7,3 +7,6 @@ __pycache__
 *.pem
 *.crt
 .pytest_cache
+.coverage
+htmlcov
+*.xml

@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: Service
+metadata:
+ name: traefik
+spec:
+ ports:
+ - protocol: TCP
+   name: web
+   port: 80
+ - protocol: TCP
+   name: admin
+   port: 8080
+ - protocol: TCP
+   name: websecure
+   port: 443
+ - protocol: TCP
+   name: metrics
+   port: 8082
+ type: LoadBalancer
+ selector:
+  app: traefik
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+ namespace: default
+ name: traefik-ingress-controller
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: default
+  name: traefik
+  labels:
+    app: traefik
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traefik
+  template:
+    metadata:
+      labels:
+        app: traefik
+    spec:
+      serviceAccountName: traefik-ingress-controller
+      containers:
+       - name: traefik
+         image: traefik:v2.2
+         args:
+            - --api.insecure
+            - --accesslog
+            - --metrics=true
+            - --metrics.prometheus=true
+            - --metrics.prometheus.buckets=0.100000, 0.300000, 1.200000, 5.000000
+            - --metrics.prometheus.entrypoint=metrics
+            - --metrics.prometheus.addEntryPointsLabels=true
+            - --metrics.prometheus.addServicesLabels=true
+            - --entryPoints.metrics.Address=:8082
+            - --entrypoints.web.Address=:80
+            - --entrypoints.websecure.Address=:443
+            - --providers.kubernetescrd
+            - --certificatesresolvers.cloudflare.acme.email=mascit.info@gmail.com
+            - --certificatesresolvers.cloudflare.acme.dnschallenge=true
+            - --certificatesresolvers.cloudflare.acme.dnschallenge.delaybeforecheck=0
+            - --certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare
+            - --certificatesresolvers.cloudflare.acme.dnschallenge.resolvers[0]=1.1.1.1:53
+            - --certificatesresolvers.cloudflare.acme.dnschallenge.resolvers[1]=8.8.8.8:53
+            - --certificatesresolvers.cloudflare.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory
+            - --certificatesresolvers.cloudflare.acme.storage=/acme.json
+         ports:
+            - name: metrics
+              containerPort: 8082
+            - name: web
+              containerPort: 80
+            - name: websecure
+              containerPort: 443
+            - name: admin
+              containerPort: 8080

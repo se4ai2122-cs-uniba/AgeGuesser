@@ -1,0 +1,64 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+   name: age-app-frontend
+spec:
+   replicas: 1
+   selector:
+      matchLabels:
+         app: age-app-frontend
+   template:
+      metadata:
+         labels:
+            app: age-app-frontend
+      spec:
+         containers:
+         - name: age-app-frontend
+           imagePullPolicy: Always
+           image: mascit/ag-frontend:0.11
+           resources:
+             requests:
+               cpu: "100m"
+               memory: "64Mi"
+             limits:
+               cpu: "500m"
+               memory: "1000Mi"
+           ports:
+             - name: web
+               containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+   name: age-app-frontend
+   labels:
+      app: age-app-frontend
+spec:
+   ports:
+      - protocol: "TCP"
+        port: 80
+        targetPort: 80
+        name: age-app-frontend
+   selector:
+      app: age-app-frontend
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ingressroutetls-age-frontend
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Host(`ageguesser.com`)
+    kind: Rule
+    services:
+    - name: age-app-frontend
+      port: 80
+  tls: # This route uses TLS
+      certResolver: letsencrypt
+      domains:
+       - main: "ageguesser.com"
+         sans:
+          - "*.ageguesser.com"

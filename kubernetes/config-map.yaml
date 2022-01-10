@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-server-conf
+  labels:
+    name: prometheus-server-conf
+  namespace: mymonitoring
+data:
+  prometheus.rules: |-
+    groups:
+    - name: request flooding
+      rules:
+      - alert: Request Flooding
+        expr: sum(traefik_entrypoint_open_connections{method="POST"}) > 120
+        for: 10s
+        annotations:
+          summary: Lots of incoming post requests 
+  prometheus.yml: |-
+    global:
+      scrape_interval: 1m
+      evaluation_interval: 1m
+    rule_files:
+      - /etc/prometheus/prometheus.rules
+    alerting:
+      alertmanagers:
+      - scheme: http
+        static_configs:
+        - targets:
+          - "alertmanager.mymonitoring.svc:9093"
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+      - job_name: 'traefik'
+        scheme: https
+        static_configs:
+          - targets: ['ageguesser.com']

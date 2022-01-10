@@ -1,0 +1,131 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+   name: age-app
+spec:
+   replicas: 1
+   selector:
+      matchLabels:
+         app: age-app
+   template:
+      metadata:
+         labels:
+            app: age-app
+      spec:
+        containers:
+        - name: age-app
+          imagePullPolicy: Always
+          image: mascit/ag:latest
+          volumeMounts:
+           - mountPath: /app/release_models
+             name: mymount
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "1000Mi"
+          ports:
+            - name: web
+              containerPort: 80
+        volumes:
+           - name: mymount
+             hostPath:
+               path: /home/ec2-user/release_models
+---
+apiVersion: v1
+kind: Service
+metadata:
+   name: age-app
+   labels:
+      app: age-app
+spec:
+   ports:
+      - protocol: "TCP"
+        port: 80
+        targetPort: 80
+        name: age-app
+   selector:
+      app: age-app
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ingressroutetls-age
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Host(`backend.ageguesser.com`)
+    kind: Rule
+    services:
+    - name: age-app
+      port: 80
+  tls: # This route uses TLS
+      certResolver: letsencrypt
+      domains:
+       - main: "backend.ageguesser.com"
+         sans:
+          - "*.backend.ageguesser.com"
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ingressroutetls-age-model-predict
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Path("/models.age.predict") && Host(`backend.ageguesser.com`)
+    kind: Rule
+    services:
+    - name: age-app
+      port: 80
+  tls: # This route uses TLS
+      certResolver: letsencrypt
+      domains:
+       - main: "backend.ageguesser.com"
+         sans:
+          - "*.backend.ageguesser.com"
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ingressroutetls-age-model-predict-face
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Path("/models.face.predict") && Host(`backend.ageguesser.com`)
+    kind: Rule
+    services:
+    - name: age-app
+      port: 80
+  tls: # This route uses TLS
+      certResolver: letsencrypt
+      domains:
+       - main: "backend.ageguesser.com"
+         sans:
+          - "*.backend.ageguesser.com"
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ingressroutetls-age-model-list-age
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - match: Path("/models.age.list") && Host(`backend.ageguesser.com`)
+    kind: Rule
+    services:
+    - name: age-app
+      port: 80
+  tls: # This route uses TLS
+      certResolver: letsencrypt
+      domains:
+       - main: "backend.ageguesser.com"
+         sans:
+          - "*.backend.ageguesser.com"
